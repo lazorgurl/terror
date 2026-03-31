@@ -10,7 +10,7 @@ const providers = (process.env.TERROR_PROVIDERS ?? '')
 const config: TerrorConfig = {
   providers: [],
   autoApply: process.env.TERROR_AUTO_APPLY === 'true',
-  logLevel: (process.env.TERROR_LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') ?? 'info',
+  logLevel: (process.env.TERROR_LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') ?? 'warn',
 }
 
 async function loadProviders() {
