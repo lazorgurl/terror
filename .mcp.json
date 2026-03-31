@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "terror": {
-      "command": "bun",
+      "command": "/Users/julia/.bun/bin/bun",
       "args": ["/Users/julia/Code/Work/Roguelite/terror/packages/core/dist/bin.js"]
     }
   }

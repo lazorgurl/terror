@@ -64,13 +64,15 @@ If they chose ADC, verify it works by running `gcloud auth application-default p
 
 Generate the `.mcp.json` entry and write it to the project root. If `.mcp.json` already exists, merge the terror entry without overwriting other servers.
 
+First, find the absolute path to bun by running `which bun`.
+
 The config should look like:
 ```jsonc
 {
   "mcpServers": {
     "terror": {
-      "command": "node",
-      "args": ["~/.terror/src/packages/core/dist/index.js"],
+      "command": "<absolute path to bun from which bun>",
+      "args": ["<absolute path to home>/.terror/src/packages/core/dist/bin.js"],
       "env": {
         "TERROR_PROVIDERS": "gcp",
         "GCP_PROJECT_ID": "<their-project>",
@@ -80,6 +82,8 @@ The config should look like:
   }
 }
 ```
+
+**Critical:** Use `bun` (absolute path), not `node`. The entrypoint is `bin.js`, not `index.js`. Dependencies are in Bun's module store and Node.js cannot resolve them.
 
 Add env vars based on their provider selections and auth choices.
 

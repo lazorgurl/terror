@@ -32,15 +32,32 @@ Post-MVP providers: AWS, Cloudflare, DigitalOcean.
 - **Two-layer tools** — low-level CRUD per resource type + high-level intent-based composite operations (e.g. "deploy a static site").
 - **Provider plugin system** — each provider is a separate npm package implementing the `Provider` interface from core. Provider packages depend on `@terror/core` via `workspace:*` protocol.
 - **OAuth broker** — local HTTP server handles OAuth callbacks for unified auth UX across providers.
-- **MCP stdio transport** — runs as a standard MCP server, added to Claude Code/Desktop config.
+- **MCP stdio transport** — runs as a standard MCP server. Entrypoint is `packages/core/dist/bin.js`. **Must be run with `bun` (not `node`)** — dependencies are in Bun's module store.
 
 ## Claude Code Plugin
 
-Located in `.claude/plugins/terror/`. Provides:
+Located in `.claude/plugins/terror/`. Distributed as a marketplace via `.claude-plugin/marketplace.json`.
 
-**Commands:** `/infra`, `/provision`, `/inspect`, `/costs`, `/debug-infra`, `/doc-infra`
+**Commands:** `/setup`, `/infra`, `/provision`, `/inspect`, `/costs`, `/debug-infra`, `/doc-infra`, `/update`, `/debug-mcp`
 
 **Agents:** architect (design), builder (execute), guardian (audit), debugger (diagnose), scribe (document)
+
+## MCP Server Config
+
+The `.mcp.json` entry must use the absolute path to `bun` and point to `bin.js`:
+
+```jsonc
+{
+  "mcpServers": {
+    "terror": {
+      "command": "<absolute path to bun>",
+      "args": ["<absolute path to terror>/packages/core/dist/bin.js"]
+    }
+  }
+}
+```
+
+Common pitfalls: using `node` (can't resolve bun modules), using `index.js` (no server entrypoint), using `~` in paths (not expanded).
 
 See `docs/install.md` for installation instructions.
 
