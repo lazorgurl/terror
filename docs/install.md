@@ -13,29 +13,35 @@ bun run build
 
 ## Install Claude Code plugin
 
-Symlink into the local plugins directory and register:
+Two options:
+
+### Option A: Development mode (current session only)
+
+```bash
+claude --plugin-dir ~/.terror/src/.claude/plugins/terror
+```
+
+### Option B: Persistent install
+
+Symlink into the local plugins directory:
 
 ```bash
 ln -s ~/.terror/src/.claude/plugins/terror ~/.claude/plugins/local/terror
 ```
 
-Then add an entry to `~/.claude/plugins/installed_plugins.json` in the `"plugins"` object:
+Then enable the plugin. Add `"enabledPlugins"` to your Claude Code settings (either `~/.claude/settings.json` for all projects, or `.claude/settings.json` in a specific project):
 
-```jsonc
-"terror@local": [
-  {
-    "scope": "user",
-    "installPath": "<HOME>/.claude/plugins/local/terror",
-    "version": "0.1.0",
-    "installedAt": "<CURRENT_ISO_DATETIME>",
-    "lastUpdated": "<CURRENT_ISO_DATETIME>"
+```json
+{
+  "enabledPlugins": {
+    "terror": true
   }
-]
+}
 ```
 
-Replace `<HOME>` with the user's absolute home directory path (e.g. the output of `echo $HOME`). Replace `<CURRENT_ISO_DATETIME>` with the current time in ISO 8601 format.
+Restart Claude Code. Commands (`/setup`, `/infra`, `/provision`, `/inspect`, `/costs`, `/debug-infra`, `/doc-infra`, `/update`) and agents (architect, builder, guardian, debugger, scribe) will be available.
 
-Restart Claude Code, then run `/setup` to configure providers, auth, and MCP registration interactively.
+Run `/setup` to configure providers, auth, and MCP registration interactively.
 
 ## Manual MCP registration (if not using /setup)
 

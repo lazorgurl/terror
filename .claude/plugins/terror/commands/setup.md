@@ -91,19 +91,17 @@ Check if the plugin symlink exists at `~/.claude/plugins/local/terror`. If not:
 ln -s ~/.terror/src/.claude/plugins/terror ~/.claude/plugins/local/terror
 ```
 
-Then read `~/.claude/plugins/installed_plugins.json` and add a `"terror@local"` entry to the `"plugins"` object if it doesn't already exist:
+Then enable the plugin by reading `~/.claude/settings.json` (create if it doesn't exist) and adding `"terror": true` to the `"enabledPlugins"` object:
 
 ```json
-"terror@local": [
-  {
-    "scope": "user",
-    "installPath": "<absolute path to ~/.claude/plugins/local/terror>",
-    "version": "0.1.0",
-    "installedAt": "<current ISO datetime>",
-    "lastUpdated": "<current ISO datetime>"
+{
+  "enabledPlugins": {
+    "terror": true
   }
-]
+}
 ```
+
+If the file already has other settings, merge `enabledPlugins` without overwriting existing keys.
 
 Tell the user to restart Claude Code for the plugin to load.
 
