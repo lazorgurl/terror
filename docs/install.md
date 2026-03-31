@@ -11,7 +11,15 @@ bun install
 bun run build
 ```
 
-## Register MCP server
+## Install Claude Code plugin
+
+```bash
+ln -s ~/.terror/src/.claude/plugins/terror ~/.claude/plugins/terror
+```
+
+Restart Claude Code, then run `/setup` to configure providers, auth, and MCP registration interactively.
+
+## Manual MCP registration (if not using /setup)
 
 Add to `.mcp.json` in your project root:
 
@@ -31,26 +39,6 @@ Add to `.mcp.json` in your project root:
 }
 ```
 
-## Install Claude Code plugin
-
-```bash
-ln -s ~/.terror/src/.claude/plugins/terror ~/.claude/plugins/terror
-```
-
-Restart Claude Code. Commands (`/infra`, `/provision`, `/inspect`, `/costs`, `/debug-infra`, `/doc-infra`) and agents (architect, builder, guardian, debugger, scribe) will be available.
-
-## GCP auth
-
-Terror opens a browser for Google Cloud OAuth on first use. Tokens are stored in `~/.terror/credentials.json`.
-
-Alternatively, set `GOOGLE_APPLICATION_CREDENTIALS` in `.mcp.json` env for service account auth.
-
-## Verify
-
-Run `/infra` in Claude Code. If the MCP server isn't connected, check that `~/.terror/src/packages/core/dist/index.js` exists.
-
 ## Update
 
-```bash
-cd ~/.terror/src && git pull && bun install && bun run build
-```
+See [docs/update.md](https://raw.githubusercontent.com/lazorgurl/terror/main/docs/update.md) or run `/terror-update` in Claude Code.
