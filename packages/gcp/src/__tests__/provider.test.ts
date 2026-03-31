@@ -289,12 +289,15 @@ describe("GcpProvider", () => {
   });
 
   describe("without credentials", () => {
-    it("throws when accessing tools without credentials", () => {
+    it("returns tools without credentials but throws when a tool handler accesses clients", async () => {
       const unauthProvider = new GcpProvider({
         projectId: "test",
         region: "us-central1",
       });
-      expect(() => unauthProvider.getTools()).toThrow(
+      const tools = unauthProvider.getTools();
+      expect(tools.length).toBeGreaterThan(0);
+      // Actually calling a tool should fail because clients aren't initialized
+      await expect(tools[0].handler({})).rejects.toThrow(
         /GCP clients not initialized/,
       );
     });

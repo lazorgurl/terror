@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { TerrorServer } from './server.js'
-import type { TerrorConfig } from './types.js'
+import type { Provider, TerrorConfig } from './types.js'
+import { resolve } from 'node:path'
 
 const providers = (process.env.TERROR_PROVIDERS ?? '')
   .split(',')
@@ -14,12 +15,17 @@ const config: TerrorConfig = {
 }
 
 async function loadProviders() {
+  // Resolve provider packages relative to the monorepo structure
+  // bin.js lives at packages/core/dist/bin.js, so packages/ is ../../
+  const packagesDir = resolve(__dirname, '..', '..')
+
   for (const name of providers) {
     try {
-      const pkg = `@terror/${name}`
-      const mod: any = await import(pkg)
+      const providerPath = resolve(packagesDir, name, 'dist', 'index.js')
+      const mod: any = await import(providerPath)
+
       if (name === 'gcp' && mod.GcpProvider) {
-        const provider = new mod.GcpProvider({
+        const provider: Provider = new mod.GcpProvider({
           projectId: process.env.GCP_PROJECT_ID ?? '',
           region: process.env.GCP_REGION ?? 'us-central1',
         })

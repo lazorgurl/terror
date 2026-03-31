@@ -41,24 +41,14 @@ export class GcpProvider implements Provider {
   }
 
   async authenticate(): Promise<void> {
-    // TODO: Trigger OAuth flow via @terror/core's OAuthBroker for Google Cloud OAuth2.
-    // The broker should handle:
-    //   - Opening the browser to Google's consent screen
-    //   - Receiving the callback with the authorization code
-    //   - Exchanging the code for access + refresh tokens
-    //   - Storing the tokens and setting this.config.credentials
-    //
-    // Scopes needed:
-    //   https://www.googleapis.com/auth/cloud-platform
-    //   https://www.googleapis.com/auth/compute
-    //   https://www.googleapis.com/auth/devstorage.full_control
+    // TODO: Trigger OAuth flow via @terror/core's OAuthBroker
     throw new Error(
       "OAuth flow not yet implemented. Provide credentials in GcpConfig or implement OAuthBroker.",
     );
   }
 
   async listResources(type?: string): Promise<Resource[]> {
-    this.requireClients();
+    const clients = this.getClients();
 
     const resources: Resource[] = [];
     const targetResources = type
@@ -66,7 +56,7 @@ export class GcpProvider implements Provider {
       : [...ALL_RESOURCES];
 
     for (const resource of targetResources) {
-      const items = await resource.list(this.clients!, this.config);
+      const items = await resource.list(clients, this.config);
       resources.push(...items);
     }
 
@@ -76,13 +66,15 @@ export class GcpProvider implements Provider {
   getTools(): Tool[] {
     const tools: Tool[] = [];
     for (const resource of ALL_RESOURCES) {
-      tools.push(...resource.getTools(this.requireClients(), this.config));
+      // Pass a lazy client getter — tools are registered at startup but
+      // clients may not be initialized until the tool is actually called
+      tools.push(...resource.getTools(this.lazyClients(), this.config));
     }
     return tools;
   }
 
   getCompositeTools(): Tool[] {
-    const clients = this.requireClients();
+    const clients = this.lazyClients();
     return [
       deployStaticSite(clients, this.config),
       deployCloudRunService(clients, this.config),
@@ -90,12 +82,24 @@ export class GcpProvider implements Provider {
     ];
   }
 
-  private requireClients(): GcpClients {
+  private getClients(): GcpClients {
     if (!this.clients) {
       throw new Error(
         "GCP clients not initialized. Call authenticate() or provide credentials in GcpConfig.",
       );
     }
     return this.clients;
+  }
+
+  // Returns a proxy that defers client access until a property is actually used.
+  // This lets tools be registered at startup without requiring auth upfront.
+  private lazyClients(): GcpClients {
+    const provider = this;
+    return new Proxy({} as GcpClients, {
+      get(_target, prop) {
+        const clients = provider.getClients();
+        return (clients as any)[prop];
+      },
+    });
   }
 }

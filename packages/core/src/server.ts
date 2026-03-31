@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
+import { z, type ZodTypeAny } from "zod";
 import type { AgentDecisionResponse, Provider, Resource, TerrorConfig, Tool } from "./types.js";
 import { PlanEngine } from "./plan-engine.js";
 import { Logger } from "./logger.js";
@@ -95,16 +95,45 @@ export class TerrorServer {
     };
   }
 
+  // Convert JSON Schema properties to Zod shape for MCP SDK compatibility
+  private jsonSchemaToZod(schema: Record<string, unknown>): Record<string, ZodTypeAny> {
+    const properties = (schema.properties ?? {}) as Record<string, any>;
+    const required = new Set((schema.required ?? []) as string[]);
+    const zodShape: Record<string, ZodTypeAny> = {};
+
+    for (const [key, prop] of Object.entries(properties)) {
+      let field: ZodTypeAny;
+      switch (prop.type) {
+        case 'number':
+        case 'integer':
+          field = z.number().describe(prop.description ?? '');
+          break;
+        case 'boolean':
+          field = z.boolean().describe(prop.description ?? '');
+          break;
+        case 'array':
+          field = z.array(z.any()).describe(prop.description ?? '');
+          break;
+        default:
+          field = z.string().describe(prop.description ?? '');
+      }
+      zodShape[key] = required.has(key) ? field : field.optional();
+    }
+    return zodShape;
+  }
+
   private registerTool(tool: Tool) {
     const isList = this.isListTool(tool.name);
     const schema = isList
       ? this.addMetaParams(tool.inputSchema)
       : tool.inputSchema;
 
+    const zodShape = this.jsonSchemaToZod(schema);
+
     this.server.tool(
       tool.name,
       tool.description,
-      schema as Record<string, { type: string; description?: string }>,
+      zodShape,
       async (params) => {
         this.logger.debug("Tool invoked", { tool: tool.name });
         try {
