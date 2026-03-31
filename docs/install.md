@@ -13,7 +13,7 @@ bun run build
 
 ## Install Claude Code plugin
 
-Symlink into the local plugins directory and register it:
+Symlink into the local plugins directory and register:
 
 ```bash
 ln -s ~/.terror/src/.claude/plugins/terror ~/.claude/plugins/local/terror

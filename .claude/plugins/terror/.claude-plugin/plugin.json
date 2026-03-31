@@ -1,0 +1,9 @@
+{
+  "name": "terror",
+  "version": "0.1.0",
+  "description": "Agent-native cloud infrastructure management",
+  "author": {
+    "name": "Roguelite Software"
+  },
+  "keywords": ["infrastructure", "cloud", "mcp", "terraform", "gcp"]
+}
