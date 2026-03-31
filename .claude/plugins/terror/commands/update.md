@@ -1,5 +1,5 @@
 ---
-name: terror-update
+name: update
 description: Update Terror source, dependencies, and rebuild from the latest main branch
 ---
 

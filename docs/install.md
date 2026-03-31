@@ -41,4 +41,4 @@ Add to `.mcp.json` in your project root:
 
 ## Update
 
-See [docs/update.md](https://raw.githubusercontent.com/lazorgurl/terror/main/docs/update.md) or run `/terror-update` in Claude Code.
+See [docs/update.md](https://raw.githubusercontent.com/lazorgurl/terror/main/docs/update.md) or run `/update` in Claude Code (via the terror plugin).
