@@ -1,0 +1,28 @@
+{
+  "name": "@terror/gcp",
+  "version": "0.1.0",
+  "description": "GCP provider for Terror — an agentic Terraform MCP tool",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@terror/core": "workspace:*",
+    "@google-cloud/compute": "^4.0.0",
+    "@google-cloud/storage": "^7.0.0",
+    "@google-cloud/run": "^1.0.0",
+    "@google-cloud/functions": "^3.0.0",
+    "@google-cloud/cloud-sql-connector": "^1.0.0",
+    "@google-cloud/pubsub": "^4.0.0",
+    "google-auth-library": "^9.0.0",
+    "googleapis": "^140.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
