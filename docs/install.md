@@ -13,9 +13,27 @@ bun run build
 
 ## Install Claude Code plugin
 
+Symlink into the local plugins directory and register it:
+
 ```bash
-ln -s ~/.terror/src/.claude/plugins/terror ~/.claude/plugins/terror
+ln -s ~/.terror/src/.claude/plugins/terror ~/.claude/plugins/local/terror
 ```
+
+Then add an entry to `~/.claude/plugins/installed_plugins.json` in the `"plugins"` object:
+
+```jsonc
+"terror@local": [
+  {
+    "scope": "user",
+    "installPath": "/Users/julia/.claude/plugins/local/terror",
+    "version": "0.1.0",
+    "installedAt": "2026-04-01T00:00:00.000Z",
+    "lastUpdated": "2026-04-01T00:00:00.000Z"
+  }
+]
+```
+
+Adjust the `installPath` to use the actual home directory (replace `/Users/julia` with the correct path). The `installedAt` and `lastUpdated` timestamps should use the current datetime.
 
 Restart Claude Code, then run `/setup` to configure providers, auth, and MCP registration interactively.
 

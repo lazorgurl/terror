@@ -85,9 +85,24 @@ Add env vars based on their provider selections and auth choices.
 
 ## Step 5: Install the Claude Code plugin
 
-Check if the plugin symlink exists at `~/.claude/plugins/terror`. If not:
+Check if the plugin symlink exists at `~/.claude/plugins/local/terror`. If not:
+
 ```bash
-ln -s ~/.terror/src/.claude/plugins/terror ~/.claude/plugins/terror
+ln -s ~/.terror/src/.claude/plugins/terror ~/.claude/plugins/local/terror
+```
+
+Then read `~/.claude/plugins/installed_plugins.json` and add a `"terror@local"` entry to the `"plugins"` object if it doesn't already exist:
+
+```json
+"terror@local": [
+  {
+    "scope": "user",
+    "installPath": "<absolute path to ~/.claude/plugins/local/terror>",
+    "version": "0.1.0",
+    "installedAt": "<current ISO datetime>",
+    "lastUpdated": "<current ISO datetime>"
+  }
+]
 ```
 
 Tell the user to restart Claude Code for the plugin to load.
