@@ -1,32 +1,26 @@
 # Installing Terror
 
-Instructions for Claude Code agents (and humans) to install Terror and its Claude Code plugin from source.
+> **For agents:** Read this file and follow the steps. For humans: tell your agent to read `https://raw.githubusercontent.com/lazorgurl/terror/main/docs/install.md`
 
-## Prerequisites
-
-- Node.js 18+
-- pnpm (`npm install -g pnpm`)
-- Git
-
-## Install from GitHub
+## Install
 
 ```bash
-git clone https://github.com/lazorgurl/terror.git
-cd terror
-pnpm install
-pnpm build
+git clone https://github.com/lazorgurl/terror.git ~/.terror/src
+cd ~/.terror/src
+bun install
+bun run build
 ```
 
-## Register as an MCP server
+## Register MCP server
 
-Add Terror to your Claude Code MCP config. Create or edit `.mcp.json` in your project root:
+Add to `.mcp.json` in your project root:
 
 ```jsonc
 {
   "mcpServers": {
     "terror": {
       "command": "node",
-      "args": ["/path/to/terror/packages/core/dist/index.js"],
+      "args": ["~/.terror/src/packages/core/dist/index.js"],
       "env": {
         "TERROR_PROVIDERS": "gcp",
         "GCP_PROJECT_ID": "your-project-id",
@@ -37,51 +31,26 @@ Add Terror to your Claude Code MCP config. Create or edit `.mcp.json` in your pr
 }
 ```
 
-Replace `/path/to/terror` with the absolute path to your cloned repo.
-
-## Install the Claude Code plugin
-
-The plugin provides slash commands (`/infra`, `/provision`, `/inspect`, `/costs`, `/debug-infra`, `/doc-infra`) and specialized agents (architect, builder, guardian, debugger, scribe).
-
-Symlink the plugin into your Claude Code plugins directory:
+## Install Claude Code plugin
 
 ```bash
-# macOS / Linux
-ln -s /path/to/terror/.claude/plugins/terror ~/.claude/plugins/terror
+ln -s ~/.terror/src/.claude/plugins/terror ~/.claude/plugins/terror
 ```
 
-Or copy it:
+Restart Claude Code. Commands (`/infra`, `/provision`, `/inspect`, `/costs`, `/debug-infra`, `/doc-infra`) and agents (architect, builder, guardian, debugger, scribe) will be available.
+
+## GCP auth
+
+Terror opens a browser for Google Cloud OAuth on first use. Tokens are stored in `~/.terror/credentials.json`.
+
+Alternatively, set `GOOGLE_APPLICATION_CREDENTIALS` in `.mcp.json` env for service account auth.
+
+## Verify
+
+Run `/infra` in Claude Code. If the MCP server isn't connected, check that `~/.terror/src/packages/core/dist/index.js` exists.
+
+## Update
 
 ```bash
-cp -r /path/to/terror/.claude/plugins/terror ~/.claude/plugins/terror
+cd ~/.terror/src && git pull && bun install && bun run build
 ```
-
-After installing, restart Claude Code. The commands and agents will be available in all projects.
-
-## Verify installation
-
-In Claude Code, run:
-
-```
-/infra
-```
-
-This should invoke Terror's status tools and show your infrastructure overview. If the MCP server isn't connected, you'll see a connection error — double-check your `.mcp.json` paths.
-
-## GCP authentication
-
-Terror uses an OAuth broker for authentication. On first use, it will open a browser window for Google Cloud OAuth. Tokens are stored in `~/.terror/credentials.json`.
-
-Alternatively, set `GOOGLE_APPLICATION_CREDENTIALS` in your `.mcp.json` env to use a service account key file.
-
-## Development
-
-If you're contributing to Terror itself:
-
-```bash
-pnpm dev          # watch mode build
-pnpm test         # run all tests
-pnpm lint         # eslint + prettier check
-```
-
-See [CLAUDE.md](../CLAUDE.md) for architecture and conventions.

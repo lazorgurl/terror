@@ -1,4 +1,4 @@
-import type { Resource, Tool } from "@terror/core/types.js";
+import type { Resource, Tool } from "@terror/core";
 import type { GcpClients } from "../client.js";
 import type { GcpConfig } from "../provider.js";
 
@@ -12,12 +12,12 @@ export const computeResource: ComputeResourceDefinition = {
   type: "compute-instance",
 
   async list(clients, config): Promise<Resource[]> {
-    const [instances] = await clients.computeInstances.aggregatedList({
+    const resources: Resource[] = [];
+    const iterable = clients.computeInstances.aggregatedListAsync({
       project: config.projectId,
     });
 
-    const resources: Resource[] = [];
-    for (const [, scopedList] of instances) {
+    for await (const [, scopedList] of iterable) {
       const items = scopedList.instances ?? [];
       for (const instance of items) {
         resources.push({

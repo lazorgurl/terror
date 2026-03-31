@@ -10,7 +10,7 @@ Agents provision and manage cloud resources through MCP tools instead of CLI com
 
 ## Tech Stack
 
-TypeScript, Node.js, pnpm monorepo, vitest, eslint + prettier.
+TypeScript, Node.js, bun monorepo, vitest, eslint + prettier.
 
 ## Package Structure
 
@@ -47,12 +47,12 @@ See `docs/install.md` for installation instructions.
 ## Build Commands
 
 ```bash
-pnpm install                          # install dependencies
-pnpm build                            # build all packages
-pnpm test                             # run all tests
-pnpm dev                              # watch mode build
-pnpm --filter @terror/core test       # test single package
-pnpm --filter @terror/gcp build       # build single package
+bun install                               # install dependencies
+bun run build                             # build all packages
+bun test                                  # run all tests
+bun run dev                               # watch mode build
+bun run --filter @terror/core test        # test single package
+bun run --filter @terror/gcp build        # build single package
 ```
 
 ## Key Conventions

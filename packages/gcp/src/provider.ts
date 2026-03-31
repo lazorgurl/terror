@@ -1,4 +1,4 @@
-import type { Provider, Resource, Tool, OAuthTokens } from "@terror/core/types.js";
+import type { Provider, Resource, Tool, OAuthTokens } from "@terror/core";
 import { createGcpClients, type GcpClients } from "./client.js";
 import { computeResource } from "./resources/compute.js";
 import { storageResource } from "./resources/storage.js";

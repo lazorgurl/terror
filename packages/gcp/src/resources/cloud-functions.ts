@@ -1,4 +1,4 @@
-import type { Resource, Tool } from "@terror/core/types.js";
+import type { Resource, Tool } from "@terror/core";
 import type { GcpClients } from "../client.js";
 import type { GcpConfig } from "../provider.js";
 
@@ -15,7 +15,8 @@ export const cloudFunctionsResource: CloudFunctionsResourceDefinition = {
     const parent = `projects/${config.projectId}/locations/${config.region}`;
     const [functions] = await clients.cloudFunctions.listFunctions({ parent });
 
-    return (functions ?? []).map((fn) => ({
+    // listFunctions returns loosely-typed protos; annotate to satisfy strict mode
+    return (functions ?? []).map((fn: Record<string, any>) => ({
       id: fn.name ?? "",
       type: "cloud-function",
       provider: "gcp",
@@ -49,7 +50,7 @@ export const cloudFunctionsResource: CloudFunctionsResourceDefinition = {
           const region = (params.region as string | undefined) ?? config.region;
           const parent = `projects/${config.projectId}/locations/${region}`;
           const [functions] = await clients.cloudFunctions.listFunctions({ parent });
-          return (functions ?? []).map((fn) => ({
+          return (functions ?? []).map((fn: Record<string, any>) => ({
             name: fn.name?.split("/").pop(),
             runtime: fn.buildConfig?.runtime,
             state: fn.state,

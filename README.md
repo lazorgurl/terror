@@ -35,7 +35,7 @@ Terror is an agentic Terraform replacement built as an MCP tool. Agents provisio
 ## Quick Start
 
 ```bash
-pnpm add @terror/core @terror/gcp
+bun add @terror/core @terror/gcp
 ```
 
 Add Terror to your MCP config:
@@ -86,9 +86,9 @@ Two-layer tool design: low-level CRUD per resource type, plus high-level intent-
 
 See [`CLAUDE.md`](CLAUDE.md) for full architectural details.
 
-## Installation
+## Install
 
-See [`docs/install.md`](docs/install.md) for complete setup instructions — MCP server registration, Claude Code plugin installation, and GCP authentication.
+Tell your agent to read [`docs/install.md`](https://raw.githubusercontent.com/lazorgurl/terror/main/docs/install.md).
 
 ## License
 

@@ -11,18 +11,18 @@
   },
   "dependencies": {
     "@terror/core": "workspace:*",
-    "@google-cloud/compute": "^4.0.0",
-    "@google-cloud/storage": "^7.0.0",
-    "@google-cloud/run": "^1.0.0",
-    "@google-cloud/functions": "^3.0.0",
-    "@google-cloud/cloud-sql-connector": "^1.0.0",
-    "@google-cloud/pubsub": "^4.0.0",
-    "google-auth-library": "^9.0.0",
-    "googleapis": "^140.0.0"
+    "@google-cloud/compute": "^6.9.0",
+    "@google-cloud/storage": "^7.19.0",
+    "@google-cloud/run": "^3.2.0",
+    "@google-cloud/functions": "^4.2.1",
+    "@google-cloud/cloud-sql-connector": "^1.9.2",
+    "@google-cloud/pubsub": "^5.3.0",
+    "google-auth-library": "^10.6.2",
+    "googleapis": "^171.4.0"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.0",
+    "vitest": "^4.1.2"
   }
 }

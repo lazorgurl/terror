@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GcpProvider, type GcpConfig } from "../provider.js";
-import type { Provider, Resource, Tool, OAuthTokens } from "@terror/core/types.js";
+import type { Provider, Resource, Tool, OAuthTokens } from "@terror/core";
 
 vi.mock("../client.js", () => ({
   createGcpClients: vi.fn(() => mockClients),
@@ -8,7 +8,7 @@ vi.mock("../client.js", () => ({
 
 const mockClients = {
   computeInstances: {
-    aggregatedList: vi.fn().mockResolvedValue([new Map()]),
+    aggregatedListAsync: vi.fn().mockReturnValue((async function* () {})()),
     list: vi.fn().mockResolvedValue([[]]),
     get: vi.fn().mockResolvedValue([{}]),
     insert: vi.fn().mockResolvedValue([{}]),
@@ -32,7 +32,7 @@ const mockClients = {
   },
   subnetworks: {
     list: vi.fn().mockResolvedValue([[]]),
-    aggregatedList: vi.fn().mockResolvedValue([new Map()]),
+    aggregatedListAsync: vi.fn().mockReturnValue((async function* () {})()),
     get: vi.fn().mockResolvedValue([{}]),
     insert: vi.fn().mockResolvedValue([{}]),
     setPrivateIpGoogleAccess: vi.fn().mockResolvedValue([{}]),
@@ -259,7 +259,7 @@ describe("GcpProvider", () => {
 
     it("calls all resource list functions", async () => {
       await provider.listResources();
-      expect(mockClients.computeInstances.aggregatedList).toHaveBeenCalled();
+      expect(mockClients.computeInstances.aggregatedListAsync).toHaveBeenCalled();
       expect(mockClients.storage.getBuckets).toHaveBeenCalled();
       expect(mockClients.cloudRun.listServices).toHaveBeenCalled();
       expect(mockClients.cloudFunctions.listFunctions).toHaveBeenCalled();
@@ -271,7 +271,7 @@ describe("GcpProvider", () => {
 
     it("filters by resource type when specified", async () => {
       await provider.listResources("compute-instance");
-      expect(mockClients.computeInstances.aggregatedList).toHaveBeenCalled();
+      expect(mockClients.computeInstances.aggregatedListAsync).toHaveBeenCalled();
       expect(mockClients.storage.getBuckets).not.toHaveBeenCalled();
     });
   });

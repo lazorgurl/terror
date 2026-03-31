@@ -1,4 +1,4 @@
-import type { Resource, Tool } from "@terror/core/types.js";
+import type { Resource, Tool } from "@terror/core";
 import type { GcpClients } from "../client.js";
 import type { GcpConfig } from "../provider.js";
 
@@ -179,11 +179,11 @@ export const networkResource: NetworkResourceDefinition = {
               region: s.region,
             }));
           }
-          const [subnets] = await clients.subnetworks.aggregatedList({
+          const iterable = clients.subnetworks.aggregatedListAsync({
             project: config.projectId,
           });
           const results: Array<{ name: string | null | undefined; network: string | undefined; ipCidrRange: string | null | undefined; region: string | null | undefined }> = [];
-          for (const [, scopedList] of subnets) {
+          for await (const [, scopedList] of iterable) {
             for (const s of scopedList.subnetworks ?? []) {
               results.push({
                 name: s.name,

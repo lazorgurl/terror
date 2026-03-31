@@ -1,4 +1,4 @@
-import type { Tool } from "@terror/core/types.js";
+import type { Tool } from "@terror/core";
 import type { GcpClients } from "./client.js";
 import type { GcpConfig } from "./provider.js";
 
