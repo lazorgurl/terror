@@ -1,5 +1,5 @@
 import type { Provider, Resource, Tool, OAuthTokens } from "@terror/core";
-import { createGcpClients, type GcpClients } from "./client.js";
+import { createGcpClients, createDefaultGcpClients, type GcpClients } from "./client.js";
 import { computeResource } from "./resources/compute.js";
 import { storageResource } from "./resources/storage.js";
 import { cloudRunResource } from "./resources/cloud-run.js";
@@ -37,14 +37,17 @@ export class GcpProvider implements Provider {
     this.config = config;
     if (config.credentials) {
       this.clients = createGcpClients(config.projectId, config.credentials);
+    } else {
+      // Use Application Default Credentials (gcloud auth, GOOGLE_APPLICATION_CREDENTIALS, etc.)
+      this.clients = createDefaultGcpClients(config.projectId);
     }
   }
 
   async authenticate(): Promise<void> {
-    // TODO: Trigger OAuth flow via @terror/core's OAuthBroker
-    throw new Error(
-      "OAuth flow not yet implemented. Provide credentials in GcpConfig or implement OAuthBroker.",
-    );
+    // Re-initialize with ADC if not already authenticated
+    if (!this.clients) {
+      this.clients = createDefaultGcpClients(this.config.projectId);
+    }
   }
 
   async listResources(type?: string): Promise<Resource[]> {

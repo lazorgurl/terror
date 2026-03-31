@@ -6,7 +6,7 @@ import { PubSub } from "@google-cloud/pubsub";
 import { google } from "googleapis";
 import type { iam_v1 } from "googleapis";
 import type { sqladmin_v1 } from "googleapis";
-import { OAuth2Client } from "google-auth-library";
+import { GoogleAuth, OAuth2Client } from "google-auth-library";
 import type { OAuthTokens } from "@terror/core";
 
 export interface GcpClients {
@@ -22,6 +22,28 @@ export interface GcpClients {
   iam: iam_v1.Iam;
 }
 
+// Create clients using Application Default Credentials (gcloud auth, env vars, etc.)
+export function createDefaultGcpClients(projectId: string): GcpClients {
+  const auth = new GoogleAuth({
+    projectId,
+    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+  });
+
+  return {
+    computeInstances: new InstancesClient({ projectId }),
+    firewalls: new FirewallsClient({ projectId }),
+    networks: new NetworksClient({ projectId }),
+    subnetworks: new SubnetworksClient({ projectId }),
+    storage: new Storage({ projectId }),
+    cloudRun: new ServicesClient({ projectId }),
+    cloudFunctions: new functionsV2.FunctionServiceClient({ projectId }),
+    pubsub: new PubSub({ projectId }),
+    sqladmin: google.sqladmin({ version: "v1", auth: auth as any }),
+    iam: google.iam({ version: "v1", auth: auth as any }),
+  };
+}
+
+// Create clients using explicit OAuth tokens
 export function createGcpClients(
   projectId: string,
   tokens: OAuthTokens,
@@ -33,8 +55,6 @@ export function createGcpClients(
     expiry_date: tokens.expiresAt?.getTime(),
   });
 
-  // @google-cloud SDKs expect their own AuthClient type which differs from
-  // google-auth-library's OAuth2Client at the type level, but is compatible at runtime.
   const authOptions = { authClient: oauth2Client as unknown as undefined };
 
   return {

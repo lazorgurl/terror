@@ -34,18 +34,23 @@ Allow multi-select.
 For each provider the user selected, ask provider-specific questions using AskUserQuestion:
 
 ### GCP
-**Question:** "How do you want to authenticate with GCP?"
-- **OAuth (recommended)** — Terror opens a browser for Google OAuth. Best for personal dev.
-- **Service account key** — Use a JSON key file. Best for CI/service environments.
-- **Application Default Credentials** — Use existing `gcloud auth` login.
 
-Then ask:
+Terror uses Application Default Credentials (ADC) automatically. Check if the user is already authenticated:
+
+```bash
+gcloud auth application-default print-access-token 2>/dev/null && echo "ADC OK" || echo "NOT AUTHENTICATED"
+```
+
+If not authenticated, run:
+```bash
+gcloud auth application-default login
+```
+
+Then ask using AskUserQuestion:
 - **"Which GCP project should Terror manage?"** — Free text. If they're unsure, run `gcloud projects list` to show their projects and let them pick.
 - **"Which GCP region?"** — Options: us-central1, us-east1, us-west1, europe-west1, asia-east1, or Other.
 
-If they chose OAuth, trigger the OAuth flow by telling them Terror will open a browser on first use.
-If they chose service account, ask for the path to the key file.
-If they chose ADC, verify it works by running `gcloud auth application-default print-access-token`.
+If the user wants to use a service account key instead, set `GOOGLE_APPLICATION_CREDENTIALS` in the `.mcp.json` env pointing to the key file.
 
 ### AWS (when available)
 - Authentication method: SSO, access keys, or IAM role

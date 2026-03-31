@@ -313,39 +313,22 @@ describe("GcpProvider", () => {
     });
   });
 
-  describe("authenticate", () => {
-    it("throws when OAuth is not implemented", async () => {
-      const unauthProvider = new GcpProvider({
+  describe("without explicit credentials", () => {
+    it("still creates clients using ADC and returns tools", () => {
+      const adcProvider = new GcpProvider({
         projectId: "test",
         region: "us-central1",
       });
-      await expect(unauthProvider.authenticate()).rejects.toThrow(
-        /OAuth flow not yet implemented/,
-      );
-    });
-  });
-
-  describe("without credentials", () => {
-    it("returns tools without credentials but throws when a tool handler accesses clients", async () => {
-      const unauthProvider = new GcpProvider({
-        projectId: "test",
-        region: "us-central1",
-      });
-      const tools = unauthProvider.getTools();
+      const tools = adcProvider.getTools();
       expect(tools.length).toBe(8);
-      await expect(tools[0].handler({ action: "list" })).rejects.toThrow(
-        /GCP clients not initialized/,
-      );
     });
 
-    it("throws when listing resources without credentials", async () => {
-      const unauthProvider = new GcpProvider({
+    it("authenticate is a no-op when clients already exist", async () => {
+      const adcProvider = new GcpProvider({
         projectId: "test",
         region: "us-central1",
       });
-      await expect(unauthProvider.listResources()).rejects.toThrow(
-        /GCP clients not initialized/,
-      );
+      await expect(adcProvider.authenticate()).resolves.toBeUndefined();
     });
   });
 });
