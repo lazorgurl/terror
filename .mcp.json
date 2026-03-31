@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "terror": {
+      "command": "node",
+      "args": ["./packages/core/dist/bin.js"]
+    }
+  }
+}

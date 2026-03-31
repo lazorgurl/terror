@@ -4,6 +4,9 @@
   "description": "Core package for Terror — an agentic Terraform MCP tool",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "terror": "dist/bin.js"
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest",
