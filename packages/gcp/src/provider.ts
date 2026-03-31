@@ -8,7 +8,7 @@ import { cloudSqlResource } from "./resources/cloud-sql.js";
 import { pubsubResource } from "./resources/pubsub.js";
 import { iamResource } from "./resources/iam.js";
 import { networkResource } from "./resources/network.js";
-import { deployStaticSite, deployCloudRunService, createApiBackend } from "./composite.js";
+import { deployStaticSite, deployCloudRunService, createApiBackend, getConsolidatedDeployTool } from "./composite.js";
 
 export interface GcpConfig {
   projectId: string;
@@ -64,16 +64,26 @@ export class GcpProvider implements Provider {
   }
 
   getTools(): Tool[] {
+    const clients = this.lazyClients();
+    return ALL_RESOURCES.map((resource) =>
+      resource.getConsolidatedTool(clients, this.config),
+    );
+  }
+
+  getCompositeTools(): Tool[] {
+    const clients = this.lazyClients();
+    return [getConsolidatedDeployTool(clients, this.config)];
+  }
+
+  getIndividualTools(): Tool[] {
     const tools: Tool[] = [];
     for (const resource of ALL_RESOURCES) {
-      // Pass a lazy client getter — tools are registered at startup but
-      // clients may not be initialized until the tool is actually called
       tools.push(...resource.getTools(this.lazyClients(), this.config));
     }
     return tools;
   }
 
-  getCompositeTools(): Tool[] {
+  getIndividualCompositeTools(): Tool[] {
     const clients = this.lazyClients();
     return [
       deployStaticSite(clients, this.config),

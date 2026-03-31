@@ -149,14 +149,10 @@ describe("GcpProvider", () => {
     expect(provider.name).toBe("gcp");
   });
 
-  describe("getTools", () => {
-    it("returns tools for all resource types", () => {
+  describe("getTools (consolidated)", () => {
+    it("returns one consolidated tool per resource type", () => {
       const tools = provider.getTools();
-      expect(tools.length).toBeGreaterThan(0);
-      expect(tools.every((t): t is Tool => typeof t.name === "string")).toBe(true);
-      expect(tools.every((t) => typeof t.description === "string")).toBe(true);
-      expect(tools.every((t) => typeof t.inputSchema === "object")).toBe(true);
-      expect(tools.every((t) => typeof t.handler === "function")).toBe(true);
+      expect(tools).toHaveLength(8);
     });
 
     it("returns tools with unique names", () => {
@@ -165,89 +161,130 @@ describe("GcpProvider", () => {
       expect(new Set(names).size).toBe(names.length);
     });
 
-    it("includes compute tools", () => {
+    it("includes expected consolidated tool names", () => {
       const tools = provider.getTools();
+      const names = tools.map((t) => t.name);
+      expect(names).toContain("gcp_compute");
+      expect(names).toContain("gcp_storage");
+      expect(names).toContain("gcp_cloud_run");
+      expect(names).toContain("gcp_cloud_functions");
+      expect(names).toContain("gcp_cloud_sql");
+      expect(names).toContain("gcp_pubsub");
+      expect(names).toContain("gcp_iam");
+      expect(names).toContain("gcp_network");
+    });
+
+    it("all tools have an action enum in their input schema", () => {
+      const tools = provider.getTools();
+      for (const tool of tools) {
+        expect(tool.inputSchema).toHaveProperty("type", "object");
+        const props = tool.inputSchema.properties as Record<string, any>;
+        expect(props.action).toBeDefined();
+        expect(props.action.enum).toBeDefined();
+        expect(props.action.enum.length).toBeGreaterThan(0);
+      }
+    });
+
+    it("all tools require only 'action'", () => {
+      const tools = provider.getTools();
+      for (const tool of tools) {
+        expect(tool.inputSchema.required).toEqual(["action"]);
+      }
+    });
+  });
+
+  describe("consolidated tool dispatch", () => {
+    it("gcp_compute dispatches list action", async () => {
+      const tools = provider.getTools();
+      const compute = tools.find((t) => t.name === "gcp_compute")!;
+      await compute.handler({ action: "list" });
+      expect(mockClients.computeInstances.aggregatedListAsync).toHaveBeenCalled();
+    });
+
+    it("gcp_compute dispatches get action", async () => {
+      const tools = provider.getTools();
+      const compute = tools.find((t) => t.name === "gcp_compute")!;
+      await compute.handler({ action: "get", name: "my-instance", zone: "us-central1-a" });
+      expect(mockClients.computeInstances.get).toHaveBeenCalledWith({
+        project: "test-project",
+        instance: "my-instance",
+        zone: "us-central1-a",
+      });
+    });
+
+    it("gcp_compute rejects unknown actions", async () => {
+      const tools = provider.getTools();
+      const compute = tools.find((t) => t.name === "gcp_compute")!;
+      await expect(compute.handler({ action: "invalid" })).rejects.toThrow("Unknown action");
+    });
+
+    it("gcp_storage dispatches list_buckets action", async () => {
+      const tools = provider.getTools();
+      const storage = tools.find((t) => t.name === "gcp_storage")!;
+      await storage.handler({ action: "list_buckets" });
+      expect(mockClients.storage.getBuckets).toHaveBeenCalled();
+    });
+
+    it("gcp_storage dispatches get_bucket action", async () => {
+      const tools = provider.getTools();
+      const storage = tools.find((t) => t.name === "gcp_storage")!;
+      await storage.handler({ action: "get_bucket", name: "my-bucket" });
+      expect(mockClients.storage.bucket).toHaveBeenCalledWith("my-bucket");
+    });
+
+    it("gcp_cloud_sql dispatches list action", async () => {
+      const tools = provider.getTools();
+      const sql = tools.find((t) => t.name === "gcp_cloud_sql")!;
+      await sql.handler({ action: "list" });
+      expect(mockClients.sqladmin.instances.list).toHaveBeenCalled();
+    });
+
+    it("gcp_pubsub dispatches create_topic action", async () => {
+      const tools = provider.getTools();
+      const pubsub = tools.find((t) => t.name === "gcp_pubsub")!;
+      await pubsub.handler({ action: "create_topic", name: "my-topic" });
+      expect(mockClients.pubsub.createTopic).toHaveBeenCalled();
+    });
+
+    it("gcp_network dispatches list_firewalls action", async () => {
+      const tools = provider.getTools();
+      const network = tools.find((t) => t.name === "gcp_network")!;
+      await network.handler({ action: "list_firewalls" });
+      expect(mockClients.firewalls.list).toHaveBeenCalled();
+    });
+  });
+
+  describe("getCompositeTools (consolidated)", () => {
+    it("returns one consolidated deploy tool", () => {
+      const tools = provider.getCompositeTools();
+      expect(tools).toHaveLength(1);
+      expect(tools[0].name).toBe("gcp_deploy");
+    });
+
+    it("gcp_deploy has action enum with three deploy types", () => {
+      const tools = provider.getCompositeTools();
+      const deploy = tools[0];
+      const props = deploy.inputSchema.properties as Record<string, any>;
+      expect(props.action.enum).toEqual(["static_site", "cloud_run_service", "api_backend"]);
+    });
+  });
+
+  describe("getIndividualTools (backwards compat)", () => {
+    it("returns all individual tools", () => {
+      const tools = provider.getIndividualTools();
+      expect(tools.length).toBeGreaterThan(40);
+    });
+
+    it("includes compute tools", () => {
+      const tools = provider.getIndividualTools();
       const computeTools = tools.filter((t) => t.name.startsWith("gcp_compute_"));
       expect(computeTools.length).toBe(6);
     });
 
     it("includes storage tools", () => {
-      const tools = provider.getTools();
+      const tools = provider.getIndividualTools();
       const storageTools = tools.filter((t) => t.name.startsWith("gcp_storage_"));
       expect(storageTools.length).toBe(9);
-    });
-
-    it("includes cloud run tools", () => {
-      const tools = provider.getTools();
-      const runTools = tools.filter((t) => t.name.startsWith("gcp_cloud_run_"));
-      expect(runTools.length).toBe(5);
-    });
-
-    it("includes cloud functions tools", () => {
-      const tools = provider.getTools();
-      const fnTools = tools.filter((t) => t.name.startsWith("gcp_functions_"));
-      expect(fnTools.length).toBe(5);
-    });
-
-    it("includes cloud sql tools", () => {
-      const tools = provider.getTools();
-      const sqlTools = tools.filter((t) => t.name.startsWith("gcp_sql_"));
-      expect(sqlTools.length).toBe(5);
-    });
-
-    it("includes pubsub tools", () => {
-      const tools = provider.getTools();
-      const pubsubTools = tools.filter((t) => t.name.startsWith("gcp_pubsub_"));
-      expect(pubsubTools.length).toBe(8);
-    });
-
-    it("includes iam tools", () => {
-      const tools = provider.getTools();
-      const iamTools = tools.filter((t) => t.name.startsWith("gcp_iam_"));
-      expect(iamTools.length).toBe(8);
-    });
-
-    it("includes network tools", () => {
-      const tools = provider.getTools();
-      const networkTools = tools.filter((t) => t.name.startsWith("gcp_network_"));
-      expect(networkTools.length).toBeGreaterThanOrEqual(12);
-    });
-
-    it("all tools have valid JSON Schema input definitions", () => {
-      const tools = provider.getTools();
-      for (const tool of tools) {
-        expect(tool.inputSchema).toHaveProperty("type", "object");
-        expect(tool.inputSchema).toHaveProperty("properties");
-      }
-    });
-  });
-
-  describe("getCompositeTools", () => {
-    it("returns three composite tools", () => {
-      const tools = provider.getCompositeTools();
-      expect(tools).toHaveLength(3);
-    });
-
-    it("includes deployStaticSite", () => {
-      const tools = provider.getCompositeTools();
-      const staticSite = tools.find((t) => t.name === "gcp_deploy_static_site");
-      expect(staticSite).toBeDefined();
-      expect(staticSite!.inputSchema).toHaveProperty("properties");
-      expect(
-        (staticSite!.inputSchema as Record<string, Record<string, unknown>>).required,
-      ).toContain("bucketName");
-    });
-
-    it("includes deployCloudRunService", () => {
-      const tools = provider.getCompositeTools();
-      const runDeploy = tools.find((t) => t.name === "gcp_deploy_cloud_run_full");
-      expect(runDeploy).toBeDefined();
-    });
-
-    it("includes createApiBackend", () => {
-      const tools = provider.getCompositeTools();
-      const api = tools.find((t) => t.name === "gcp_create_api_backend");
-      expect(api).toBeDefined();
     });
   });
 
@@ -295,9 +332,8 @@ describe("GcpProvider", () => {
         region: "us-central1",
       });
       const tools = unauthProvider.getTools();
-      expect(tools.length).toBeGreaterThan(0);
-      // Actually calling a tool should fail because clients aren't initialized
-      await expect(tools[0].handler({})).rejects.toThrow(
+      expect(tools.length).toBe(8);
+      await expect(tools[0].handler({ action: "list" })).rejects.toThrow(
         /GCP clients not initialized/,
       );
     });

@@ -6,6 +6,7 @@ export interface StorageResourceDefinition {
   type: string;
   list(clients: GcpClients, config: GcpConfig): Promise<Resource[]>;
   getTools(clients: GcpClients, config: GcpConfig): Tool[];
+  getConsolidatedTool(clients: GcpClients, config: GcpConfig): Tool;
 }
 
 export const storageResource: StorageResourceDefinition = {
@@ -270,5 +271,72 @@ export const storageResource: StorageResourceDefinition = {
         },
       },
     ];
+  },
+
+  getConsolidatedTool(clients, config): Tool {
+    const individualTools = storageResource.getTools(clients, config);
+    const toolMap = new Map(individualTools.map((t) => [t.name, t]));
+
+    return {
+      name: "gcp_storage",
+      description:
+        "Manage GCP Cloud Storage buckets and objects.\n\n" +
+        "Actions:\n" +
+        "- list_buckets: List all buckets. Params: prefix? (string)\n" +
+        "- get_bucket: Get bucket metadata. Params: name (string)\n" +
+        "- create_bucket: Create a bucket. Params: name (string), location? (string), storageClass? (STANDARD|NEARLINE|COLDLINE|ARCHIVE), uniformBucketLevelAccess? (boolean), publicAccess? (boolean)\n" +
+        "- update_bucket: Update bucket metadata. Params: name (string), versioning? (boolean), labels? (object)\n" +
+        "- delete_bucket: Delete a bucket. Params: name (string), force? (boolean)\n" +
+        "- list_objects: List objects in a bucket. Params: bucket (string), prefix? (string), maxResults? (number)\n" +
+        "- get_object: Get object metadata. Params: bucket (string), object (string)\n" +
+        "- upload_object: Upload content to an object. Params: bucket (string), destination (string), content (string), contentType? (string)\n" +
+        "- delete_object: Delete an object. Params: bucket (string), object (string)",
+      inputSchema: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            enum: ["list_buckets", "get_bucket", "create_bucket", "update_bucket", "delete_bucket", "list_objects", "get_object", "upload_object", "delete_object"],
+            description: "The action to perform.",
+          },
+          name: { type: "string", description: "Bucket name (bucket actions)." },
+          prefix: { type: "string", description: "Name prefix filter." },
+          location: { type: "string", description: "Bucket location (create_bucket)." },
+          storageClass: { type: "string", description: "Storage class (create_bucket)." },
+          uniformBucketLevelAccess: { type: "boolean", description: "Uniform access (create_bucket)." },
+          publicAccess: { type: "boolean", description: "Public read access (create_bucket)." },
+          versioning: { type: "boolean", description: "Object versioning (update_bucket)." },
+          labels: { type: "object", additionalProperties: { type: "string" }, description: "Labels (update_bucket)." },
+          force: { type: "boolean", description: "Force delete all objects first (delete_bucket)." },
+          bucket: { type: "string", description: "Bucket name (object actions)." },
+          object: { type: "string", description: "Object name/path." },
+          destination: { type: "string", description: "Destination object path (upload_object)." },
+          content: { type: "string", description: "String content (upload_object)." },
+          contentType: { type: "string", description: "MIME type (upload_object)." },
+          maxResults: { type: "number", description: "Max objects to return (list_objects)." },
+        },
+        required: ["action"],
+      },
+      handler: async (params) => {
+        const action = params.action as string;
+        const actionToTool: Record<string, string> = {
+          list_buckets: "gcp_storage_bucket_list",
+          get_bucket: "gcp_storage_bucket_get",
+          create_bucket: "gcp_storage_bucket_create",
+          update_bucket: "gcp_storage_bucket_update",
+          delete_bucket: "gcp_storage_bucket_delete",
+          list_objects: "gcp_storage_object_list",
+          get_object: "gcp_storage_object_get",
+          upload_object: "gcp_storage_object_upload",
+          delete_object: "gcp_storage_object_delete",
+        };
+        const toolName = actionToTool[action];
+        if (!toolName) throw new Error(`Unknown action: ${action}`);
+        const tool = toolMap.get(toolName);
+        if (!tool) throw new Error(`Tool not found: ${toolName}`);
+        const { action: _, ...rest } = params;
+        return tool.handler(rest);
+      },
+    };
   },
 };

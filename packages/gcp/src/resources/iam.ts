@@ -6,6 +6,7 @@ export interface IamResourceDefinition {
   type: string;
   list(clients: GcpClients, config: GcpConfig): Promise<Resource[]>;
   getTools(clients: GcpClients, config: GcpConfig): Tool[];
+  getConsolidatedTool(clients: GcpClients, config: GcpConfig): Tool;
 }
 
 export const iamResource: IamResourceDefinition = {
@@ -221,5 +222,61 @@ export const iamResource: IamResourceDefinition = {
         },
       },
     ];
+  },
+
+  getConsolidatedTool(clients, config): Tool {
+    const individualTools = iamResource.getTools(clients, config);
+    const toolMap = new Map(individualTools.map((t) => [t.name, t]));
+
+    return {
+      name: "gcp_iam",
+      description:
+        "Manage GCP IAM service accounts and policy bindings.\n\n" +
+        "Actions:\n" +
+        "- list_service_accounts: List all service accounts.\n" +
+        "- get_service_account: Get service account details. Params: email (string)\n" +
+        "- create_service_account: Create a service account. Params: accountId (string), displayName? (string), description? (string)\n" +
+        "- update_service_account: Update a service account. Params: email (string), displayName? (string), description? (string)\n" +
+        "- delete_service_account: Delete a service account. Params: email (string)\n" +
+        "- get_policy: Get project IAM policy.\n" +
+        "- add_binding: Add an IAM binding. Params: member (string), role (string)\n" +
+        "- remove_binding: Remove an IAM binding. Params: member (string), role (string)",
+      inputSchema: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            enum: ["list_service_accounts", "get_service_account", "create_service_account", "update_service_account", "delete_service_account", "get_policy", "add_binding", "remove_binding"],
+            description: "The action to perform.",
+          },
+          email: { type: "string", description: "Service account email." },
+          accountId: { type: "string", description: "Account ID for new service account." },
+          displayName: { type: "string", description: "Display name." },
+          description: { type: "string", description: "Description." },
+          member: { type: "string", description: "Member identity (e.g., 'user:email@example.com')." },
+          role: { type: "string", description: "IAM role (e.g., 'roles/viewer')." },
+        },
+        required: ["action"],
+      },
+      handler: async (params) => {
+        const action = params.action as string;
+        const actionToTool: Record<string, string> = {
+          list_service_accounts: "gcp_iam_service_account_list",
+          get_service_account: "gcp_iam_service_account_get",
+          create_service_account: "gcp_iam_service_account_create",
+          update_service_account: "gcp_iam_service_account_update",
+          delete_service_account: "gcp_iam_service_account_delete",
+          get_policy: "gcp_iam_policy_get",
+          add_binding: "gcp_iam_policy_binding_add",
+          remove_binding: "gcp_iam_policy_binding_remove",
+        };
+        const toolName = actionToTool[action];
+        if (!toolName) throw new Error(`Unknown action: ${action}`);
+        const tool = toolMap.get(toolName);
+        if (!tool) throw new Error(`Tool not found: ${toolName}`);
+        const { action: _, ...rest } = params;
+        return tool.handler(rest);
+      },
+    };
   },
 };

@@ -6,6 +6,7 @@ export interface NetworkResourceDefinition {
   type: string;
   list(clients: GcpClients, config: GcpConfig): Promise<Resource[]>;
   getTools(clients: GcpClients, config: GcpConfig): Tool[];
+  getConsolidatedTool(clients: GcpClients, config: GcpConfig): Tool;
 }
 
 export const networkResource: NetworkResourceDefinition = {
@@ -494,5 +495,82 @@ export const networkResource: NetworkResourceDefinition = {
         },
       },
     ];
+  },
+
+  getConsolidatedTool(clients, config): Tool {
+    const individualTools = networkResource.getTools(clients, config);
+    const toolMap = new Map(individualTools.map((t) => [t.name, t]));
+
+    return {
+      name: "gcp_network",
+      description:
+        "Manage GCP VPC networks, subnets, and firewall rules.\n\n" +
+        "Actions:\n" +
+        "- list_vpcs: List all VPC networks.\n" +
+        "- get_vpc: Get VPC details. Params: name (string)\n" +
+        "- create_vpc: Create a VPC. Params: name (string), autoCreateSubnetworks? (boolean), routingMode? (REGIONAL|GLOBAL)\n" +
+        "- update_vpc: Update a VPC. Params: name (string), routingMode (REGIONAL|GLOBAL)\n" +
+        "- delete_vpc: Delete a VPC. Params: name (string)\n" +
+        "- list_subnets: List subnets. Params: region? (string)\n" +
+        "- get_subnet: Get subnet details. Params: name (string), region (string)\n" +
+        "- create_subnet: Create a subnet. Params: name (string), network (string), region (string), ipCidrRange (string), privateIpGoogleAccess? (boolean)\n" +
+        "- update_subnet: Update a subnet. Params: name (string), region (string), privateIpGoogleAccess? (boolean)\n" +
+        "- delete_subnet: Delete a subnet. Params: name (string), region (string)\n" +
+        "- list_firewalls: List firewall rules. Params: network? (string)\n" +
+        "- get_firewall: Get firewall details. Params: name (string)\n" +
+        "- create_firewall: Create a firewall rule. Params: name (string), network? (string), direction? (INGRESS|EGRESS), priority? (number), allowed? (array), denied? (array), sourceRanges? (string[]), targetTags? (string[])\n" +
+        "- update_firewall: Update a firewall rule. Params: name (string), priority? (number), allowed? (array), sourceRanges? (string[]), targetTags? (string[])\n" +
+        "- delete_firewall: Delete a firewall rule. Params: name (string)",
+      inputSchema: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            enum: ["list_vpcs", "get_vpc", "create_vpc", "update_vpc", "delete_vpc", "list_subnets", "get_subnet", "create_subnet", "update_subnet", "delete_subnet", "list_firewalls", "get_firewall", "create_firewall", "update_firewall", "delete_firewall"],
+            description: "The action to perform.",
+          },
+          name: { type: "string", description: "Resource name (VPC, subnet, or firewall)." },
+          network: { type: "string", description: "VPC network name." },
+          region: { type: "string", description: "Region." },
+          ipCidrRange: { type: "string", description: "IP CIDR range (e.g., '10.0.0.0/24')." },
+          autoCreateSubnetworks: { type: "boolean", description: "Auto-create subnets (create_vpc)." },
+          routingMode: { type: "string", enum: ["REGIONAL", "GLOBAL"], description: "Routing mode." },
+          privateIpGoogleAccess: { type: "boolean", description: "Private Google access (subnet actions)." },
+          direction: { type: "string", enum: ["INGRESS", "EGRESS"], description: "Firewall direction." },
+          priority: { type: "number", description: "Firewall priority (0-65535)." },
+          allowed: { type: "array", items: { type: "object" }, description: "Allowed protocol/port rules." },
+          denied: { type: "array", items: { type: "object" }, description: "Denied protocol/port rules." },
+          sourceRanges: { type: "array", items: { type: "string" }, description: "Source IP CIDR ranges." },
+          targetTags: { type: "array", items: { type: "string" }, description: "Target instance tags." },
+        },
+        required: ["action"],
+      },
+      handler: async (params) => {
+        const action = params.action as string;
+        const actionToTool: Record<string, string> = {
+          list_vpcs: "gcp_network_vpc_list",
+          get_vpc: "gcp_network_vpc_get",
+          create_vpc: "gcp_network_vpc_create",
+          update_vpc: "gcp_network_vpc_update",
+          delete_vpc: "gcp_network_vpc_delete",
+          list_subnets: "gcp_network_subnet_list",
+          get_subnet: "gcp_network_subnet_get",
+          create_subnet: "gcp_network_subnet_create",
+          update_subnet: "gcp_network_subnet_update",
+          delete_subnet: "gcp_network_subnet_delete",
+          list_firewalls: "gcp_network_firewall_list",
+          get_firewall: "gcp_network_firewall_get",
+          create_firewall: "gcp_network_firewall_create",
+          update_firewall: "gcp_network_firewall_update",
+          delete_firewall: "gcp_network_firewall_delete",
+        };
+        const toolName = actionToTool[action];
+        if (!toolName) throw new Error(`Unknown action: ${action}`);
+        const tool = toolMap.get(toolName);
+        if (!tool) throw new Error(`Tool not found: ${toolName}`);
+        const { action: _, ...rest } = params;
+        return tool.handler(rest);
+      },
+    };
   },
 };

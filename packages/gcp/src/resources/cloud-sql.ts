@@ -6,6 +6,7 @@ export interface CloudSqlResourceDefinition {
   type: string;
   list(clients: GcpClients, config: GcpConfig): Promise<Resource[]>;
   getTools(clients: GcpClients, config: GcpConfig): Tool[];
+  getConsolidatedTool(clients: GcpClients, config: GcpConfig): Tool;
 }
 
 export const cloudSqlResource: CloudSqlResourceDefinition = {
@@ -208,6 +209,60 @@ export const cloudSqlResource: CloudSqlResourceDefinition = {
         },
       },
     ];
+  },
+
+  getConsolidatedTool(clients, config): Tool {
+    const individualTools = cloudSqlResource.getTools(clients, config);
+    const toolMap = new Map(individualTools.map((t) => [t.name, t]));
+
+    return {
+      name: "gcp_cloud_sql",
+      description:
+        "Manage GCP Cloud SQL instances.\n\n" +
+        "Actions:\n" +
+        "- list: List all instances.\n" +
+        "- get: Get instance details. Params: name (string)\n" +
+        "- create: Create an instance. Params: name (string), databaseVersion (string), tier? (string), region? (string), storageSize? (number), storageType? (PD_SSD|PD_HDD), availability? (ZONAL|REGIONAL), enablePublicIp? (boolean), rootPassword? (string)\n" +
+        "- update: Update an instance. Params: name (string), tier? (string), storageSize? (number), availability? (ZONAL|REGIONAL), databaseFlags? (array)\n" +
+        "- delete: Delete an instance. Params: name (string)",
+      inputSchema: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            enum: ["list", "get", "create", "update", "delete"],
+            description: "The action to perform.",
+          },
+          name: { type: "string", description: "Instance name." },
+          databaseVersion: { type: "string", description: "Database version (e.g., 'POSTGRES_15')." },
+          tier: { type: "string", description: "Machine type tier." },
+          region: { type: "string", description: "Region." },
+          storageSize: { type: "number", description: "Storage size in GB." },
+          storageType: { type: "string", enum: ["PD_SSD", "PD_HDD"], description: "Storage type." },
+          availability: { type: "string", enum: ["ZONAL", "REGIONAL"], description: "Availability type." },
+          enablePublicIp: { type: "boolean", description: "Assign a public IP." },
+          rootPassword: { type: "string", description: "Root password." },
+          databaseFlags: { type: "array", items: { type: "object" }, description: "Database flags [{name, value}]." },
+        },
+        required: ["action"],
+      },
+      handler: async (params) => {
+        const action = params.action as string;
+        const actionToTool: Record<string, string> = {
+          list: "gcp_sql_list",
+          get: "gcp_sql_get",
+          create: "gcp_sql_create",
+          update: "gcp_sql_update",
+          delete: "gcp_sql_delete",
+        };
+        const toolName = actionToTool[action];
+        if (!toolName) throw new Error(`Unknown action: ${action}`);
+        const tool = toolMap.get(toolName);
+        if (!tool) throw new Error(`Tool not found: ${toolName}`);
+        const { action: _, ...rest } = params;
+        return tool.handler(rest);
+      },
+    };
   },
 };
 

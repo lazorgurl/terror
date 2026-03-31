@@ -6,6 +6,7 @@ export interface CloudFunctionsResourceDefinition {
   type: string;
   list(clients: GcpClients, config: GcpConfig): Promise<Resource[]>;
   getTools(clients: GcpClients, config: GcpConfig): Tool[];
+  getConsolidatedTool(clients: GcpClients, config: GcpConfig): Tool;
 }
 
 export const cloudFunctionsResource: CloudFunctionsResourceDefinition = {
@@ -240,6 +241,60 @@ export const cloudFunctionsResource: CloudFunctionsResourceDefinition = {
         },
       },
     ];
+  },
+
+  getConsolidatedTool(clients, config): Tool {
+    const individualTools = cloudFunctionsResource.getTools(clients, config);
+    const toolMap = new Map(individualTools.map((t) => [t.name, t]));
+
+    return {
+      name: "gcp_cloud_functions",
+      description:
+        "Manage GCP Cloud Functions (2nd gen).\n\n" +
+        "Actions:\n" +
+        "- list: List functions. Params: region? (string)\n" +
+        "- get: Get function details. Params: name (string), region? (string)\n" +
+        "- deploy: Deploy a function. Params: name (string), runtime (string), entryPoint (string), sourceArchiveUrl (string), triggerType? (http|pubsub|storage), triggerResource? (string), region? (string), memory? (string), timeout? (number), env? (object)\n" +
+        "- update: Update a function. Params: name (string), region? (string), runtime? (string), entryPoint? (string), memory? (string), timeout? (number), env? (object)\n" +
+        "- delete: Delete a function. Params: name (string), region? (string)",
+      inputSchema: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            enum: ["list", "get", "deploy", "update", "delete"],
+            description: "The action to perform.",
+          },
+          name: { type: "string", description: "Function name." },
+          region: { type: "string", description: "Region." },
+          runtime: { type: "string", description: "Runtime (e.g., 'nodejs20')." },
+          entryPoint: { type: "string", description: "Function entry point." },
+          sourceArchiveUrl: { type: "string", description: "GCS URL of source archive." },
+          triggerType: { type: "string", enum: ["http", "pubsub", "storage"], description: "Trigger type. Defaults to 'http'." },
+          triggerResource: { type: "string", description: "Trigger resource (topic or bucket name)." },
+          memory: { type: "string", description: "Memory limit (e.g., '256M')." },
+          timeout: { type: "number", description: "Timeout in seconds." },
+          env: { type: "object", additionalProperties: { type: "string" }, description: "Environment variables." },
+        },
+        required: ["action"],
+      },
+      handler: async (params) => {
+        const action = params.action as string;
+        const actionToTool: Record<string, string> = {
+          list: "gcp_functions_list",
+          get: "gcp_functions_get",
+          deploy: "gcp_functions_deploy",
+          update: "gcp_functions_update",
+          delete: "gcp_functions_delete",
+        };
+        const toolName = actionToTool[action];
+        if (!toolName) throw new Error(`Unknown action: ${action}`);
+        const tool = toolMap.get(toolName);
+        if (!tool) throw new Error(`Tool not found: ${toolName}`);
+        const { action: _, ...rest } = params;
+        return tool.handler(rest);
+      },
+    };
   },
 };
 

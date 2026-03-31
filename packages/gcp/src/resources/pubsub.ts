@@ -6,6 +6,7 @@ export interface PubsubResourceDefinition {
   type: string;
   list(clients: GcpClients, config: GcpConfig): Promise<Resource[]>;
   getTools(clients: GcpClients, config: GcpConfig): Tool[];
+  getConsolidatedTool(clients: GcpClients, config: GcpConfig): Tool;
 }
 
 export const pubsubResource: PubsubResourceDefinition = {
@@ -211,5 +212,61 @@ export const pubsubResource: PubsubResourceDefinition = {
         },
       },
     ];
+  },
+
+  getConsolidatedTool(clients, config): Tool {
+    const individualTools = pubsubResource.getTools(clients, config);
+    const toolMap = new Map(individualTools.map((t) => [t.name, t]));
+
+    return {
+      name: "gcp_pubsub",
+      description:
+        "Manage GCP Pub/Sub topics and subscriptions.\n\n" +
+        "Actions:\n" +
+        "- list_topics: List all topics.\n" +
+        "- get_topic: Get topic metadata. Params: name (string)\n" +
+        "- create_topic: Create a topic. Params: name (string), labels? (object), messageRetentionDuration? (string)\n" +
+        "- delete_topic: Delete a topic. Params: name (string)\n" +
+        "- list_subscriptions: List subscriptions. Params: topic? (string)\n" +
+        "- get_subscription: Get subscription metadata. Params: name (string)\n" +
+        "- create_subscription: Create a subscription. Params: name (string), topic (string), ackDeadlineSeconds? (number), pushEndpoint? (string), messageRetentionDuration? (string)\n" +
+        "- delete_subscription: Delete a subscription. Params: name (string)",
+      inputSchema: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            enum: ["list_topics", "get_topic", "create_topic", "delete_topic", "list_subscriptions", "get_subscription", "create_subscription", "delete_subscription"],
+            description: "The action to perform.",
+          },
+          name: { type: "string", description: "Topic or subscription name." },
+          topic: { type: "string", description: "Topic name (for subscription actions)." },
+          labels: { type: "object", additionalProperties: { type: "string" }, description: "Labels (create_topic)." },
+          messageRetentionDuration: { type: "string", description: "Retention duration in seconds (e.g., '86400s')." },
+          ackDeadlineSeconds: { type: "number", description: "Ack deadline in seconds (create_subscription)." },
+          pushEndpoint: { type: "string", description: "Push endpoint URL (create_subscription)." },
+        },
+        required: ["action"],
+      },
+      handler: async (params) => {
+        const action = params.action as string;
+        const actionToTool: Record<string, string> = {
+          list_topics: "gcp_pubsub_topic_list",
+          get_topic: "gcp_pubsub_topic_get",
+          create_topic: "gcp_pubsub_topic_create",
+          delete_topic: "gcp_pubsub_topic_delete",
+          list_subscriptions: "gcp_pubsub_subscription_list",
+          get_subscription: "gcp_pubsub_subscription_get",
+          create_subscription: "gcp_pubsub_subscription_create",
+          delete_subscription: "gcp_pubsub_subscription_delete",
+        };
+        const toolName = actionToTool[action];
+        if (!toolName) throw new Error(`Unknown action: ${action}`);
+        const tool = toolMap.get(toolName);
+        if (!tool) throw new Error(`Tool not found: ${toolName}`);
+        const { action: _, ...rest } = params;
+        return tool.handler(rest);
+      },
+    };
   },
 };

@@ -2,6 +2,65 @@ import type { Tool } from "@terror/core";
 import type { GcpClients } from "./client.js";
 import type { GcpConfig } from "./provider.js";
 
+export function getConsolidatedDeployTool(clients: GcpClients, config: GcpConfig): Tool {
+  const staticSiteTool = deployStaticSite(clients, config);
+  const cloudRunTool = deployCloudRunService(clients, config);
+  const apiBackendTool = createApiBackend(clients, config);
+
+  return {
+    name: "gcp_deploy",
+    description:
+      "Deploy composite GCP infrastructure stacks.\n\n" +
+      "Actions:\n" +
+      "- static_site: Deploy a static website to Cloud Storage. Params: bucketName (string), files (array of {path, content, contentType}), mainPage? (string), notFoundPage? (string), location? (string)\n" +
+      "- cloud_run_service: Deploy a Cloud Run service with IAM. Params: name (string), image (string), region? (string), port? (number), env? (object), memory? (string), cpu? (string), minInstances? (number), maxInstances? (number), allowUnauthenticated? (boolean), serviceAccount? (string)\n" +
+      "- api_backend: Create Cloud Run + Pub/Sub + Cloud SQL backend. Params: name (string), image (string), databaseVersion? (string), dbTier? (string), region? (string), env? (object)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          enum: ["static_site", "cloud_run_service", "api_backend"],
+          description: "The deployment type.",
+        },
+        name: { type: "string", description: "Service/resource base name." },
+        bucketName: { type: "string", description: "Bucket name (static_site)." },
+        files: { type: "array", description: "Files to upload [{path, content, contentType}] (static_site)." },
+        mainPage: { type: "string", description: "Main page suffix (static_site)." },
+        notFoundPage: { type: "string", description: "404 page (static_site)." },
+        location: { type: "string", description: "Bucket location (static_site)." },
+        image: { type: "string", description: "Container image URL." },
+        region: { type: "string", description: "Region." },
+        port: { type: "number", description: "Container port." },
+        env: { type: "object", additionalProperties: { type: "string" }, description: "Environment variables." },
+        memory: { type: "string", description: "Memory limit." },
+        cpu: { type: "string", description: "CPU limit." },
+        minInstances: { type: "number", description: "Min instances." },
+        maxInstances: { type: "number", description: "Max instances." },
+        allowUnauthenticated: { type: "boolean", description: "Allow public access." },
+        serviceAccount: { type: "string", description: "Service account email." },
+        databaseVersion: { type: "string", description: "Cloud SQL version (api_backend)." },
+        dbTier: { type: "string", description: "Cloud SQL tier (api_backend)." },
+      },
+      required: ["action"],
+    },
+    handler: async (params) => {
+      const action = params.action as string;
+      const { action: _, ...rest } = params;
+      switch (action) {
+        case "static_site":
+          return staticSiteTool.handler(rest);
+        case "cloud_run_service":
+          return cloudRunTool.handler(rest);
+        case "api_backend":
+          return apiBackendTool.handler(rest);
+        default:
+          throw new Error(`Unknown deploy action: ${action}`);
+      }
+    },
+  };
+}
+
 export function deployStaticSite(clients: GcpClients, config: GcpConfig): Tool {
   return {
     name: "gcp_deploy_static_site",

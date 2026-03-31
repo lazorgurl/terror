@@ -6,6 +6,7 @@ export interface ComputeResourceDefinition {
   type: string;
   list(clients: GcpClients, config: GcpConfig): Promise<Resource[]>;
   getTools(clients: GcpClients, config: GcpConfig): Tool[];
+  getConsolidatedTool(clients: GcpClients, config: GcpConfig): Tool;
 }
 
 export const computeResource: ComputeResourceDefinition = {
@@ -246,6 +247,62 @@ export const computeResource: ComputeResourceDefinition = {
         },
       },
     ];
+  },
+
+  getConsolidatedTool(clients, config): Tool {
+    const individualTools = computeResource.getTools(clients, config);
+    const toolMap = new Map(individualTools.map((t) => [t.name, t]));
+
+    return {
+      name: "gcp_compute",
+      description:
+        "Manage GCP Compute Engine instances.\n\n" +
+        "Actions:\n" +
+        "- list: List all instances. Params: zone? (string), filter? (string)\n" +
+        "- get: Get instance details. Params: name (string), zone (string)\n" +
+        "- create: Create an instance. Params: name (string), zone (string), machineType? (string), sourceImage? (string), diskSizeGb? (number), network? (string), subnet? (string), tags? (string[]), labels? (object)\n" +
+        "- start: Start a stopped instance. Params: name (string), zone (string)\n" +
+        "- stop: Stop a running instance. Params: name (string), zone (string)\n" +
+        "- delete: Delete an instance. Params: name (string), zone (string)",
+      inputSchema: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            enum: ["list", "get", "create", "start", "stop", "delete"],
+            description: "The action to perform.",
+          },
+          name: { type: "string", description: "Instance name." },
+          zone: { type: "string", description: "Zone (e.g., 'us-central1-a')." },
+          filter: { type: "string", description: "GCP filter expression (list only)." },
+          machineType: { type: "string", description: "Machine type (e.g., 'e2-micro'). Defaults to 'e2-micro'. (create only)" },
+          sourceImage: { type: "string", description: "Boot disk image. Defaults to Debian 12. (create only)" },
+          diskSizeGb: { type: "number", description: "Boot disk size in GB. Defaults to 10. (create only)" },
+          network: { type: "string", description: "VPC network name. Defaults to 'default'. (create only)" },
+          subnet: { type: "string", description: "Subnet name. (create only)" },
+          tags: { type: "array", items: { type: "string" }, description: "Network tags. (create only)" },
+          labels: { type: "object", additionalProperties: { type: "string" }, description: "Labels. (create only)" },
+        },
+        required: ["action"],
+      },
+      handler: async (params) => {
+        const action = params.action as string;
+        const actionToTool: Record<string, string> = {
+          list: "gcp_compute_list",
+          get: "gcp_compute_get",
+          create: "gcp_compute_create",
+          start: "gcp_compute_start",
+          stop: "gcp_compute_stop",
+          delete: "gcp_compute_delete",
+        };
+        const toolName = actionToTool[action];
+        if (!toolName) throw new Error(`Unknown action: ${action}`);
+        const tool = toolMap.get(toolName);
+        if (!tool) throw new Error(`Tool not found: ${toolName}`);
+        const { action: _, ...rest } = params;
+        return tool.handler(rest);
+      },
+    };
   },
 };
 
