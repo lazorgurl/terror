@@ -25,15 +25,15 @@ Then add an entry to `~/.claude/plugins/installed_plugins.json` in the `"plugins
 "terror@local": [
   {
     "scope": "user",
-    "installPath": "/Users/julia/.claude/plugins/local/terror",
+    "installPath": "<HOME>/.claude/plugins/local/terror",
     "version": "0.1.0",
-    "installedAt": "2026-04-01T00:00:00.000Z",
-    "lastUpdated": "2026-04-01T00:00:00.000Z"
+    "installedAt": "<CURRENT_ISO_DATETIME>",
+    "lastUpdated": "<CURRENT_ISO_DATETIME>"
   }
 ]
 ```
 
-Adjust the `installPath` to use the actual home directory (replace `/Users/julia` with the correct path). The `installedAt` and `lastUpdated` timestamps should use the current datetime.
+Replace `<HOME>` with the user's absolute home directory path (e.g. the output of `echo $HOME`). Replace `<CURRENT_ISO_DATETIME>` with the current time in ISO 8601 format.
 
 Restart Claude Code, then run `/setup` to configure providers, auth, and MCP registration interactively.
 
