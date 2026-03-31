@@ -2,7 +2,7 @@
 
 > **For agents:** Read this file and follow the steps. For humans: tell your agent to read `https://raw.githubusercontent.com/lazorgurl/terror/main/docs/install.md`
 
-## Install
+## Install source
 
 ```bash
 git clone https://github.com/lazorgurl/terror.git ~/.terror/src
@@ -13,31 +13,25 @@ bun run build
 
 ## Install Claude Code plugin
 
-Two options:
+Add the Terror marketplace and enable the plugin. Read `~/.claude/settings.json` and merge these keys:
 
-### Option A: Development mode (current session only)
-
-```bash
-claude --plugin-dir ~/.terror/src/.claude/plugins/terror
-```
-
-### Option B: Persistent install
-
-Symlink into the local plugins directory:
-
-```bash
-ln -s ~/.terror/src/.claude/plugins/terror ~/.claude/plugins/local/terror
-```
-
-Then enable the plugin. Add `"enabledPlugins"` to your Claude Code settings (either `~/.claude/settings.json` for all projects, or `.claude/settings.json` in a specific project):
-
-```json
+```jsonc
 {
   "enabledPlugins": {
-    "terror": true
+    "terror@terror-marketplace": true
+  },
+  "extraKnownMarketplaces": {
+    "terror-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "lazorgurl/terror"
+      }
+    }
   }
 }
 ```
+
+Do not overwrite existing keys — merge into the existing `enabledPlugins` and `extraKnownMarketplaces` objects.
 
 Restart Claude Code. Commands (`/setup`, `/infra`, `/provision`, `/inspect`, `/costs`, `/debug-infra`, `/doc-infra`, `/update`) and agents (architect, builder, guardian, debugger, scribe) will be available.
 

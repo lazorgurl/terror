@@ -1,0 +1,21 @@
+{
+  "name": "terror-marketplace",
+  "owner": {
+    "name": "Roguelite Software"
+  },
+  "metadata": {
+    "description": "Terror — agent-native cloud infrastructure management",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "terror",
+      "source": "./.claude/plugins/terror",
+      "description": "Agent-native cloud infrastructure management via MCP. Agentic Terraform.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Roguelite Software"
+      }
+    }
+  ]
+}

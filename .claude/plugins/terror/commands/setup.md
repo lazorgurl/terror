@@ -85,23 +85,23 @@ Add env vars based on their provider selections and auth choices.
 
 ## Step 5: Install the Claude Code plugin
 
-Check if the plugin symlink exists at `~/.claude/plugins/local/terror`. If not:
+Read `~/.claude/settings.json` and merge these keys into the existing JSON (do not overwrite other keys):
 
-```bash
-ln -s ~/.terror/src/.claude/plugins/terror ~/.claude/plugins/local/terror
-```
-
-Then enable the plugin by reading `~/.claude/settings.json` (create if it doesn't exist) and adding `"terror": true` to the `"enabledPlugins"` object:
-
-```json
+```jsonc
 {
   "enabledPlugins": {
-    "terror": true
+    "terror@terror-marketplace": true
+  },
+  "extraKnownMarketplaces": {
+    "terror-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "lazorgurl/terror"
+      }
+    }
   }
 }
 ```
-
-If the file already has other settings, merge `enabledPlugins` without overwriting existing keys.
 
 Tell the user to restart Claude Code for the plugin to load.
 
