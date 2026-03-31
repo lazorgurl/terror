@@ -86,6 +86,10 @@ Two-layer tool design: low-level CRUD per resource type, plus high-level intent-
 
 See [`CLAUDE.md`](CLAUDE.md) for full architectural details.
 
+## Installation
+
+See [`docs/install.md`](docs/install.md) for complete setup instructions — MCP server registration, Claude Code plugin installation, and GCP authentication.
+
 ## License
 
 [MIT](LICENSE) -- Roguelite Software
